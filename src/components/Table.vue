@@ -46,34 +46,63 @@
   <a-table :columns="columns" :data-source="filterTableData" :scroll="{ x: 1200 }"
            style="overflow: scroll;width: 100%;height: 80%;margin-top: 10px"
            :currentPage="currentPage">
-    <template #bodyCell="{ column,record }">
+    <template #bodyCell="{ column,record,idx }">
       <template v-if="column.key === 'operation'">
         <a>Publish</a>
       </template>
       <template v-else-if="column.dataIndex === 'operation'">
         <a-button @click="onDelete(record.key)">删除</a-button>
+        <a-button @click="showModal(record,idx)">编辑</a-button>
       </template>
     </template>
 
     <template #expandedRowRender="{ record }">
-      <JsonEditorVue
-          v-model="record.response"
-          mode="text"
-          :mainMenuBar="false"
-          :navigationBar="false"
-          :statusBar="true"
-          @change="jsonEditorChange"
-      />
+      <!--      <a-collapse v-model:activeKey="activeKey" v-for="item of [-->
+      <!--            {key:0,type:'request',data:record.request},-->
+      <!--            {key:1,type:'response',data:record.response}-->
+      <!--            ]">-->
+      <a-collapse v-model:activeKey="activeKey">
+        <a-collapse-panel :key="0" header="request">
+          <JsonEditorVue
+              v-model="record.request"
+              mode="text"
+              :mainMenuBar="false"
+              :statusBar="true"
+              :stringified="false"
+          />
+        </a-collapse-panel>
+
+        <a-collapse-panel :key="1" header="response">
+          <JsonEditorVue
+              v-model="record.response"
+              mode="text"
+              :mainMenuBar="false"
+              :statusBar="true"
+              :stringified="false"
+          />
+        </a-collapse-panel>
+
+      </a-collapse>
     </template>
   </a-table>
+  <a-modal v-model:open="open" width="1000px" title="Basic Modal" @ok="handleOk">
+    <JsonEditorVue
+        v-model="harFiles.value"
+        mode="text"
+        :mainMenuBar="false"
+        :statusBar="true"
+        :stringified="false"
+    />
+  </a-modal>
 </template>
 <script lang="ts" setup>
 import {UploadOutlined} from '@ant-design/icons-vue';
 import type {UnwrapRef} from 'vue';
-import {computed, reactive, ref} from 'vue';
+import {computed, reactive, ref, watch} from 'vue';
 import type {UploadChangeParam} from 'ant-design-vue';
 import {message, notification, UploadProps} from 'ant-design-vue';
 import JsonEditorVue from 'json-editor-vue'
+import {destr, safeDestr} from "destr";
 
 const columns = [
   {
@@ -99,6 +128,7 @@ const columns = [
   {
     title: 'operation',
     dataIndex: 'operation',
+    width: 120
   },
 ];
 
@@ -158,11 +188,11 @@ const handleChange = (info: UploadChangeParam) => {
     console.log(file)
     const fileContent = e.target.result;
     // console.log('文件内容：', fileContent);
-    let result = JSON.parse(String(fileContent))
+    let result = destr(String(fileContent))
     // 这里可以对 fileContent 进行进一步处理
     result.log.entries.map((item, index) => {
-      item.key = index + 1
-      item.response.key = index + 1
+      item.key = index
+      item.response.key = index
     })
 
     harFiles.value[info.file.name] = result
@@ -226,22 +256,6 @@ const formState: UnwrapRef<FormState> = reactive({
   statusText: null,
 });
 
-const jsonEditorChange = (record) => {
-  record = JSON.parse(record.text)
-  harFiles.value[formState.file].log.entries[record.key].response = record.value
-}
-
-
-import type {NotificationPlacement} from 'ant-design-vue';
-
-const notify = (message, description,) => {
-  notification.open({
-    message,
-    description,
-    placement: "top",
-  });
-};
-
 const removeHarFile = (file) => {
   console.log('删除文件', file.name)
   delete harFiles.value[file.name]
@@ -251,16 +265,7 @@ import {h} from 'vue';
 import {DownloadOutlined} from '@ant-design/icons-vue';
 
 const downloadHAR = () => {
-  // 将 JSON 数据转换为格式化的字符串
-  let json = JSON.parse(JSON.stringify(harFiles.value[formState.file]))
-
-  json.log.entries.forEach(item => {
-    delete item.key
-    delete item.response.key
-
-  })
-
-  const jsonString = JSON.stringify(json, null, 2);
+  const jsonString = JSON.stringify(harFiles.value[formState.file], null, 2);
   // 创建 Blob 对象，设置 MIME 类型为 application/json
   const blob = new Blob([jsonString], {type: 'application/json'});
   // 生成一个 URL 对象
@@ -276,5 +281,23 @@ const downloadHAR = () => {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+const activeKey = ref(['1']);
+
+watch(activeKey, val => {
+  console.log(val);
+});
+
+const open = ref<boolean>(false);
+
+const showModal = (record, idx) => {
+  open.value = true;
+};
+
+// const edit
+const handleOk = (e: MouseEvent) => {
+  console.log(e);
+  open.value = false;
+};
 </script>
 
