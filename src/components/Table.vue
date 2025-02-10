@@ -56,7 +56,7 @@
       <template v-else-if="column.dataIndex === 'operation'">
         <a-button @click="onDelete(record.key)">删除</a-button>
         <a-button @click="editShowModal(record)">编辑</a-button>
-        <a-button @click="copyText(JSON.stringify(record))">复制</a-button>
+        <a-button @click="quickCopy(record)">复制</a-button>
       </template>
     </template>
 
@@ -355,5 +355,10 @@ const readClipboardText = async () => {
     alert('无法读取剪切板内容，请确保浏览器支持或已授予权限');
   }
 };
+
+const quickCopy = (record) => {
+  copyText(JSON.stringify(record))
+  message.success('复制成功')
+}
 </script>
 
