@@ -35,10 +35,13 @@
     </a-form-item>
   </a-form>
 
-  <a-space direction="vertical" style="margin: 10px">
+  <a-space direction="vertical" style="display: flex; margin: 10px">
     <a-space warp>
+      <a-tooltip title="add">
+        <a-button :disabled="Object.keys(harFiles.valueOf()).length===0" @click="addEntries">add record</a-button>
+      </a-tooltip>
       <a-tooltip title="download">
-        <a-button :disabled="Object.keys(harFiles.valueOf()).length===0" @click="downloadHAR">download</a-button>
+        <a-button :disabled="Object.keys(harFiles.valueOf()).length===0" @click="downloadHAR">download har</a-button>
       </a-tooltip>
     </a-space>
   </a-space>
@@ -52,7 +55,8 @@
       </template>
       <template v-else-if="column.dataIndex === 'operation'">
         <a-button @click="onDelete(record.key)">删除</a-button>
-        <a-button @click="showModal(record,idx)">编辑</a-button>
+        <a-button @click="editShowModal(record)">编辑</a-button>
+        <a-button @click="copyText(JSON.stringify(record))">复制</a-button>
       </template>
     </template>
 
@@ -85,9 +89,19 @@
       </a-collapse>
     </template>
   </a-table>
-  <a-modal v-model:open="open" width="1000px" title="Basic Modal" @ok="handleOk">
+  <a-modal v-model:open="editOpen" width="1000px" title="Basic Modal" @ok="handleEditOk">
     <JsonEditorVue
-        v-model="harFiles.value"
+        v-model="editRecord"
+        mode="text"
+        :mainMenuBar="false"
+        :statusBar="true"
+        :stringified="false"
+    />
+  </a-modal>
+
+  <a-modal v-model:open="addOpen" width="1000px" style="min-height: 500px" title="add new record" @ok="handleAddOk">
+    <JsonEditorVue
+        v-model="addRecord"
         mode="text"
         :mainMenuBar="false"
         :statusBar="true"
@@ -100,9 +114,10 @@ import {UploadOutlined} from '@ant-design/icons-vue';
 import type {UnwrapRef} from 'vue';
 import {computed, reactive, ref, watch} from 'vue';
 import type {UploadChangeParam} from 'ant-design-vue';
-import {message, notification, UploadProps} from 'ant-design-vue';
+import {message, UploadProps} from 'ant-design-vue';
 import JsonEditorVue from 'json-editor-vue'
-import {destr, safeDestr} from "destr";
+import {destr} from "destr";
+import {copyText} from 'vue3-clipboard'
 
 const columns = [
   {
@@ -261,9 +276,6 @@ const removeHarFile = (file) => {
   delete harFiles.value[file.name]
 }
 
-import {h} from 'vue';
-import {DownloadOutlined} from '@ant-design/icons-vue';
-
 const downloadHAR = () => {
   const jsonString = JSON.stringify(harFiles.value[formState.file], null, 2);
   // 创建 Blob 对象，设置 MIME 类型为 application/json
@@ -288,16 +300,60 @@ watch(activeKey, val => {
   console.log(val);
 });
 
-const open = ref<boolean>(false);
+const editOpen = ref<boolean>(false);
+const addOpen = ref<boolean>(false);
 
-const showModal = (record, idx) => {
-  open.value = true;
+const editShowModal = (record) => {
+  editOpen.value = true;
+  editRecord.value = record
+  editKey.value = record.key
 };
 
+
+const addEntries = () => {
+  addOpen.value = true;
+  addRecord.value = {}
+};
+
+const editRecord = ref({})
+const addRecord = ref({})
+
+const editKey = ref(0)
 // const edit
-const handleOk = (e: MouseEvent) => {
-  console.log(e);
-  open.value = false;
+const handleEditOk = (e: MouseEvent) => {
+
+  console.log(editRecord.value);
+  editRecord.value.key = editKey.value
+  editRecord.value.response.key = editKey.value
+  harFiles.value[formState.file].log.entries[editKey.value] = editRecord.value
+  editOpen.value = false;
+};
+
+const handleAddOk = (e: MouseEvent) => {
+  console.log(editRecord.value);
+  let key = harFiles.value[formState.file].log.entries.length + 1
+  addRecord.value.key = key
+  addRecord.value.response.key = key
+  harFiles.value[formState.file].log.entries.push(addRecord.value)
+  addOpen.value = false;
+  addRecord.value = {}
+};
+
+const readClipboardText = async () => {
+  try {
+    // 请求剪切板读取权限
+    const permission = await navigator.permissions.query({name: 'clipboard-read'});
+
+    if (permission.state === 'granted' || permission.state === 'prompt') {
+      // 读取文本内容
+      return await navigator.clipboard.readText()
+    } else {
+      alert('请允许剪切板访问权限！');
+    }
+  } catch (error) {
+    console.error('读取失败:', error);
+    alert('无法读取剪切板内容，请确保浏览器支持或已授予权限');
+  }
 };
 </script>
 

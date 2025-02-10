@@ -13,7 +13,8 @@
     "ant-design-vue": "4.x",
     "destr": "^2.0.3",
     "json-editor-vue": "^0.17.3",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "vue3-clipboard": "^1.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
