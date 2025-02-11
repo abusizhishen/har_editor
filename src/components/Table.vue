@@ -33,12 +33,21 @@
       <a-select style="width: 200px" :options="statusTextOptions" v-model:value="formState.statusText"
                 placeholder=""></a-select>
     </a-form-item>
+    <a-form-item label="content-type">
+      <a-select style="width: 300px" :options="contentTypeOptions" v-model:value="formState.contentType"
+                placeholder=""></a-select>
+    </a-form-item>
   </a-form>
 
   <a-space direction="vertical" style="display: flex; margin: 10px">
     <a-space warp>
       <a-tooltip title="add">
         <a-button :disabled="Object.keys(harFiles.valueOf()).length===0" @click="addEntries">add record</a-button>
+      </a-tooltip>
+      <a-tooltip title="add">
+        <a-button :disabled="Object.keys(harFiles.valueOf()).length===0" @click="readClipboardText">add record from
+          clipboard
+        </a-button>
       </a-tooltip>
       <a-tooltip title="download">
         <a-button :disabled="Object.keys(harFiles.valueOf()).length===0" @click="downloadHAR">download har</a-button>
@@ -61,10 +70,6 @@
     </template>
 
     <template #expandedRowRender="{ record }">
-      <!--      <a-collapse v-model:activeKey="activeKey" v-for="item of [-->
-      <!--            {key:0,type:'request',data:record.request},-->
-      <!--            {key:1,type:'response',data:record.response}-->
-      <!--            ]">-->
       <a-collapse v-model:activeKey="activeKey">
         <a-collapse-panel :key="0" header="request">
           <JsonEditorVue
@@ -121,19 +126,19 @@ import {copyText} from 'vue3-clipboard'
 
 const columns = [
   {
-    title: '序号',
+    title: 'id',
     key: 'idx',
     dataIndex: 'key',
-    width: 80
+    width: 50
   },
   {title: 'status', dataIndex: ['response', 'status'], key: 'status', width: 80},
-  {title: 'method', dataIndex: ['request', 'method'], width: 90},
+  {title: 'method', dataIndex: ['request', 'method'], width: 100},
   {
     title: 'url', dataIndex: ['request', 'url'], key: 'url', width: 500, ellipsis: true,
     render: url => url.split('?')[0]
   },
   {title: 'statusText', dataIndex: ['response', 'statusText'], width: 200, key: 'statusText'},
-  {title: 'bodySize', dataIndex: ['response', 'bodySize'], key: 'bodySize'},
+  {title: 'contentLength', dataIndex: ['response', 'contentLength'], key: 'contentLength'},
   // {
   //   title: 'response', dataIndex: ['response',], width: 300, ellipsis: true,
   //   render: (response) => {
@@ -196,10 +201,6 @@ const handleChange = (info: UploadChangeParam) => {
   // 读取成功后的回调
   reader.onload = (e) => {
     let file = e.target
-    if (fileList.value.filter(item => item.name === file.name).length > 0) {
-      message.error(`${file.name} 文件已存在.`);
-      return false;
-    }
     console.log(file)
     const fileContent = e.target.result;
     // console.log('文件内容：', fileContent);
@@ -208,23 +209,19 @@ const handleChange = (info: UploadChangeParam) => {
     result.log.entries.map((item, index) => {
       item.key = index
       item.response.key = index
+      let contentLength = item.response.content.size
+      let headers = item.response.headers.filter(item => item.name === 'Content-Length')
+      if (headers.length > 0) {
+        contentLength = headers[0].value
+      }
+
+      item.response.contentLength = contentLength
     })
+
 
     harFiles.value[info.file.name] = result
-
-    let statusArr = [...new Set(result.log.entries.map(item => item.response.status))]
-    statusOptions.value = statusArr.map(status => {
-      return {label: String(status), value: status}
-    })
-
-    statusOptions.value.unshift({label: "全部", value: null})
-
-    let statusTextArr = [...new Set(result.log.entries.map(item => item.response.statusText))]
-    statusTextOptions.value = statusTextArr.map(status => {
-      return {label: String(status), value: status}
-    })
-    statusTextOptions.value.unshift({label: "全部", value: ''})
     formState.file = info.file.name
+    message.success(`${info.file.name} 文件解析成功`);
   };
 
   // 读取出错时的回调
@@ -242,8 +239,41 @@ const handleChange = (info: UploadChangeParam) => {
 const harFileOptions = computed(() => fileList.value.map(file => {
   return {label: file.name, value: file.name}
 }))
-const statusOptions = ref([])
-const statusTextOptions = ref([])
+const statusOptions = computed(() => {
+  if (!formState.file || Object.keys(harFiles.value).length === 0) return []
+  let result = [...new Set(harFiles.value[formState.file].log.entries.map(item => item.response.status))]
+  result = result.map(status => {
+    return {label: String(status), value: status}
+  })
+  result.unshift({label: "全部", value: ''})
+  return result
+})
+const statusTextOptions = computed(() => {
+  if (!formState.file || Object.keys(harFiles.value).length === 0) return []
+  let result = [...new Set(harFiles.value[formState.file].log.entries.map(item => item.response.statusText))]
+  result = result.map(status => {
+    return {label: String(status), value: status}
+  })
+  result.unshift({label: "全部", value: ''})
+  return result
+})
+
+const contentTypeOptions = computed(() => {
+  if (!formState.file || Object.keys(harFiles.value).length === 0) return []
+  let result = [...new Set(harFiles.value[formState.file].log.entries.map(item => {
+    let headers = item.response.headers.filter(item => item.name === 'Content-Type')
+    console.log('headers: ', headers)
+    if (headers.length > 0) {
+      return headers[0].value
+    }
+
+    return null
+  }))].filter(item => item !== null).map(status => {
+    return {label: String(status), value: status}
+  })
+  result.unshift({label: "全部", value: ''})
+  return result
+})
 const fileList = ref([]);
 const headers = {
   authorization: 'authorization-text',
@@ -251,7 +281,6 @@ const headers = {
 
 const beforeUpload: UploadProps['beforeUpload'] = file => {
   if (fileList.value.filter(item => item.name === file.name).length > 0) {
-    message.error(`${file.name} 文件已存在.`);
     fileList.value = fileList.value.filter(item => item.name !== file.name);
   }
   return false;
@@ -262,6 +291,7 @@ interface FormState {
   url: string;
   status: number;
   statusText: string;
+  contentType: string;
 }
 
 const formState: UnwrapRef<FormState> = reactive({
@@ -269,6 +299,7 @@ const formState: UnwrapRef<FormState> = reactive({
   url: '',
   status: null,
   statusText: null,
+  contentType: ''
 });
 
 const removeHarFile = (file) => {
@@ -329,8 +360,7 @@ const handleEditOk = (e: MouseEvent) => {
   editOpen.value = false;
 };
 
-const handleAddOk = (e: MouseEvent) => {
-  console.log(editRecord.value);
+const handleAddOk = () => {
   let key = harFiles.value[formState.file].log.entries.length + 1
   addRecord.value.key = key
   addRecord.value.response.key = key
@@ -346,7 +376,19 @@ const readClipboardText = async () => {
 
     if (permission.state === 'granted' || permission.state === 'prompt') {
       // 读取文本内容
-      return await navigator.clipboard.readText()
+      let text = await navigator.clipboard.readText()
+      if (text.length < 2) {
+        message.error('添加失败,粘贴板内容错误')
+        return
+      }
+      try {
+        addRecord.value = JSON.parse(text)
+        handleAddOk()
+        message.success('添加成功')
+
+      } catch (e) {
+        message.error('添加失败')
+      }
     } else {
       alert('请允许剪切板访问权限！');
     }
