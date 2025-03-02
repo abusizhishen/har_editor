@@ -23,10 +23,17 @@
     </div>
   </a-upload-dragger>
   <a-form class="condition" :model="formState">
-    <a-form-item label="文件" style="margin-top: 10px">
-      <a-select style="width: 400px;max-width: 600px" :options="harFileOptions" v-model:value="formState.file"
-                placeholder=""></a-select>
-    </a-form-item>
+    <div style="display: flex;align-items: center;gap: 1rem">
+      <a-form-item label="文件" style="margin-top: 10px">
+        <a-select style="width: 400px;max-width: 600px" :options="harFileOptions" v-model:value="formState.file"
+                  placeholder=""></a-select>
+
+      </a-form-item>
+      <div v-if="creator">
+        <p style="color: skyblue">{{ creator }}</p>
+      </div>
+    </div>
+
 
     <a-form-item label="状态码">
       <a-radio-group class="radio" v-model:value="formState.status" option-type="button"
@@ -205,6 +212,17 @@ const filterTableData = computed(() => {
       )
     }
 )
+
+const creator = computed(() => {
+  if (!formState.file) {
+    return ''
+  }
+
+  const har = harFiles.value[formState.file].log
+  const creator = har.creator
+  const date = har.pages.length > 0 ? har.pages[0].startedDateTime : "";
+  return `${creator.name} ${creator.version} ${date}`
+})
 
 const handleChange = (info: UploadChangeParam) => {
   if (info.file.status !== 'uploading') {
