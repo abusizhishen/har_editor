@@ -71,9 +71,15 @@
         <a>Publish</a>
       </template>
       <template v-else-if="column.dataIndex === 'operation'">
-        <a-button @click="onDelete(record.key)">delete</a-button>
-        <a-button @click="editShowModal(record)">edit</a-button>
-        <a-button @click="quickCopy(record)">copy</a-button>
+        <a-button @click="onDelete(record.key)">
+          <DeleteOutlined/>
+        </a-button>
+        <a-button @click="editShowModal(record)">
+          <EditOutlined/>
+        </a-button>
+        <a-button @click="quickCopy(record)">
+          <CopyOutlined/>
+        </a-button>
       </template>
     </template>
 
@@ -123,7 +129,7 @@
   </a-modal>
 </template>
 <script lang="ts" setup>
-import {InboxOutlined, UploadOutlined} from '@ant-design/icons-vue';
+import {InboxOutlined, DeleteOutlined, EditOutlined, CopyOutlined, UploadOutlined} from '@ant-design/icons-vue';
 import type {UnwrapRef} from 'vue';
 import {computed, reactive, ref, watch} from 'vue';
 import type {UploadChangeParam} from 'ant-design-vue';
@@ -145,8 +151,8 @@ const columns = [
     title: 'url', dataIndex: ['request', 'url'], key: 'url', width: 500, ellipsis: true,
     render: url => url.split('?')[0]
   },
-  {title: 'statusText', dataIndex: ['response', 'statusText'], width: 200, key: 'statusText'},
-  {title: 'contentLength', dataIndex: ['response', 'contentLength'], key: 'contentLength'},
+  // {title: 'statusText', dataIndex: ['response', 'statusText'], width: 150, key: 'statusText'},
+  {title: 'contentLength', dataIndex: ['response', 'contentLength'], key: 'contentLength', width: 150},
   // {
   //   title: 'response', dataIndex: ['response',], width: 300, ellipsis: true,
   //   render: (response) => {
@@ -156,7 +162,7 @@ const columns = [
   {
     title: 'operation',
     dataIndex: 'operation',
-    width: 120
+    width: 150
   },
 ];
 
@@ -438,10 +444,7 @@ const quickCopy = (record) => {
 </script>
 <style>
 .condition {
-//border: 1px #d9d9d9 solid; border-radius: 10px; margin-top: 10px;
-  padding: 1rem;
-  background-color: rgba(255, 255, 255, 0.4);
-//width: 30%;
+//border: 1px #d9d9d9 solid; border-radius: 10px; margin-top: 10px; padding: 1rem; background-color: rgba(255, 255, 255, 0.4); //width: 30%;
 }
 
 .radio {
