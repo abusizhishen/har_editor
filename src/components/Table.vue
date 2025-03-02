@@ -1,41 +1,49 @@
 <template>
-  <a-upload style="display: flex;flex-direction: column; width: 400px;align-items: start;margin-top: 10px"
-            v-model:file-list="fileList"
-            name="file"
-            :headers="headers"
-            @change="handleChange"
-            :before-upload="beforeUpload"
-            :multiple="false"
-            accept=".har"
-            :showUploadList="false"
-            @remove="removeHarFile"
+  <a-upload-dragger style="display: flex;flex-direction: column; width: 400px;align-items: start;margin-top: 10px"
+                    v-model:file-list="fileList"
+                    name="file"
+                    :headers="headers"
+                    @change="handleChange"
+                    :before-upload="beforeUpload"
+                    :multiple="false"
+                    accept=".har"
+                    :showUploadList="false"
+                    @remove="removeHarFile"
   >
-    <a-button>
-      <upload-outlined></upload-outlined>
-      上传har文件
-    </a-button>
-  </a-upload>
-
-  <a-form-item label="文件" style="margin-top: 10px">
-    <a-select style="width: 400px;max-width: 600px" :options="harFileOptions" v-model:value="formState.file"
-              placeholder=""></a-select>
-  </a-form-item>
-  <a-form style="margin-top: 10px" layout="inline" :model="formState">
-
-    <a-form-item label="url" style="max-width: 300px">
-      <a-input v-model:value="formState.url" placeholder="搜索 url"/>
-    </a-form-item>
-    <a-form-item label="状态码">
-      <a-select style="width: 100px" :options="statusOptions" v-model:value="formState.status"
+    <!--    <a-button>-->
+    <!--      <upload-outlined></upload-outlined>-->
+    <!--      上传har文件-->
+    <!--    </a-button>-->
+    <div
+        class="uploadDiv">
+      <p class="ant-upload-drag-icon">
+        <inbox-outlined></inbox-outlined>
+      </p>
+      <p class="ant-upload-text">Click or drag har file to this area</p>
+    </div>
+  </a-upload-dragger>
+  <a-form class="condition" :model="formState">
+    <a-form-item label="文件" style="margin-top: 10px">
+      <a-select style="width: 400px;max-width: 600px" :options="harFileOptions" v-model:value="formState.file"
                 placeholder=""></a-select>
+    </a-form-item>
+
+    <a-form-item label="状态码">
+      <a-radio-group class="radio" v-model:value="formState.status" option-type="button"
+                     :options="statusOptions"/>
+
     </a-form-item>
     <a-form-item label="状态码说明">
-      <a-select style="width: 200px" :options="statusTextOptions" v-model:value="formState.statusText"
-                placeholder=""></a-select>
+      <a-radio-group class="radio" option-type="button" :options="statusTextOptions"
+                     v-model:value="formState.statusText"
+                     placeholder=""></a-radio-group>
     </a-form-item>
     <a-form-item label="content-type">
-      <a-select style="width: 300px" :options="contentTypeOptions" v-model:value="formState.contentType"
-                placeholder=""></a-select>
+      <a-radio-group class='radio' :options="contentTypeOptions" v-model:value="formState.contentType"
+                     placeholder="" option-type="button"></a-radio-group>
+    </a-form-item>
+    <a-form-item label="url" style="max-width: 700px">
+      <a-input v-model:value="formState.url" placeholder="search url"/>
     </a-form-item>
   </a-form>
 
@@ -56,16 +64,16 @@
   </a-space>
 
   <a-table :columns="columns" :data-source="filterTableData" :scroll="{ x: 1200 }"
-           style="overflow: scroll;width: 100%;height: 80%;margin-top: 10px"
+           style="overflow: scroll;width: 100%;margin-top: 10px"
            :currentPage="currentPage">
     <template #bodyCell="{ column,record,idx }">
       <template v-if="column.key === 'operation'">
         <a>Publish</a>
       </template>
       <template v-else-if="column.dataIndex === 'operation'">
-        <a-button @click="onDelete(record.key)">删除</a-button>
-        <a-button @click="editShowModal(record)">编辑</a-button>
-        <a-button @click="quickCopy(record)">复制</a-button>
+        <a-button @click="onDelete(record.key)">delete</a-button>
+        <a-button @click="editShowModal(record)">edit</a-button>
+        <a-button @click="quickCopy(record)">copy</a-button>
       </template>
     </template>
 
@@ -115,7 +123,7 @@
   </a-modal>
 </template>
 <script lang="ts" setup>
-import {UploadOutlined} from '@ant-design/icons-vue';
+import {InboxOutlined, UploadOutlined} from '@ant-design/icons-vue';
 import type {UnwrapRef} from 'vue';
 import {computed, reactive, ref, watch} from 'vue';
 import type {UploadChangeParam} from 'ant-design-vue';
@@ -178,6 +186,14 @@ const filterTableData = computed(() => {
               return false
             }
 
+            console.log('contentType: ', formState.contentType)
+            if (formState.contentType) {
+              const result = data.response.headers.filter(item => item.name.toLowerCase() === 'content-type')
+              if (result.length === 0 || !result[0].value.includes(formState.contentType)) {
+                return false
+              }
+            }
+
             return true
           }
       )
@@ -221,12 +237,12 @@ const handleChange = (info: UploadChangeParam) => {
 
     harFiles.value[info.file.name] = result
     formState.file = info.file.name
-    message.success(`${info.file.name} 文件解析成功`);
+    message.success(`${info.file.name} file parse success`);
   };
 
   // 读取出错时的回调
   reader.onerror = (err) => {
-    message.error('读取文件失败');
+    message.error('file read failed');
     console.error(err);
   };
 
@@ -245,33 +261,50 @@ const statusOptions = computed(() => {
   result = result.map(status => {
     return {label: String(status), value: status}
   })
-  result.unshift({label: "全部", value: ''})
+  result.unshift({label: "all", value: ''})
   return result
 })
 const statusTextOptions = computed(() => {
   if (!formState.file || Object.keys(harFiles.value).length === 0) return []
-  let result = [...new Set(harFiles.value[formState.file].log.entries.map(item => item.response.statusText))]
+  let result = [...new Set(harFiles.value[formState.file].log.entries.filter(item => item.response.statusText).map(item => item.response.statusText))]
   result = result.map(status => {
     return {label: String(status), value: status}
   })
-  result.unshift({label: "全部", value: ''})
+  result.unshift({label: "all", value: ''})
   return result
 })
 
 const contentTypeOptions = computed(() => {
+  const contentTypes = ['html', 'css', 'image', 'javascript', 'json', 'font', 'text', 'stream']
+  // const contentTypes = {
+  //   'html': 'html',
+  //   'css': 'css',
+  //   'image': 'image',
+  //   'javascript': 'javascript',
+  //   'x-javascript': 'javascript',
+  //   'json': 'json'
+  // }
   if (!formState.file || Object.keys(harFiles.value).length === 0) return []
   let result = [...new Set(harFiles.value[formState.file].log.entries.map(item => {
-    let headers = item.response.headers.filter(item => item.name === 'Content-Type')
-    console.log('headers: ', headers)
+    let headers = item.response.headers.filter(item => item.name.toLowerCase() === 'content-type')
     if (headers.length > 0) {
-      return headers[0].value
+      const contentType = headers[0].value
+      for (let key of contentTypes) {
+        if (contentType.includes(key)) {
+          console.log(`contentType: ${contentType} exist`)
+          return key
+        }
+      }
+      console.log(`contentType: ${contentType} not exist`)
+
+      return contentType
     }
 
     return null
-  }))].filter(item => item !== null).map(status => {
+  }))].filter(item => item !== null).filter(item => item !== '').map(status => {
     return {label: String(status), value: status}
   })
-  result.unshift({label: "全部", value: ''})
+  result.unshift({label: "all", value: ''})
   return result
 })
 const fileList = ref([]);
@@ -303,7 +336,7 @@ const formState: UnwrapRef<FormState> = reactive({
 });
 
 const removeHarFile = (file) => {
-  console.log('删除文件', file.name)
+  console.log('delete file', file.name)
   delete harFiles.value[file.name]
 }
 
@@ -378,19 +411,19 @@ const readClipboardText = async () => {
       // 读取文本内容
       let text = await navigator.clipboard.readText()
       if (text.length < 2) {
-        message.error('添加失败,粘贴板内容错误')
+        message.error('add failed')
         return
       }
       try {
         addRecord.value = JSON.parse(text)
         handleAddOk()
-        message.success('添加成功')
+        message.success('add success')
 
       } catch (e) {
-        message.error('添加失败')
+        message.error('add failed')
       }
     } else {
-      alert('请允许剪切板访问权限！');
+      alert('please allow read！');
     }
   } catch (error) {
     console.error('读取失败:', error);
@@ -400,7 +433,20 @@ const readClipboardText = async () => {
 
 const quickCopy = (record) => {
   copyText(JSON.stringify(record))
-  message.success('复制成功')
+  message.success('copy success!')
 }
 </script>
+<style>
+.condition {
+//border: 1px #d9d9d9 solid; border-radius: 10px; margin-top: 10px;
+  padding: 1rem;
+  background-color: rgba(255, 255, 255, 0.4);
+//width: 30%;
+}
+
+.radio {
+  display: flex;
+  gap: 1rem
+}
+</style>
 

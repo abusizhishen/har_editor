@@ -68,9 +68,13 @@ button:focus-visible {
 }
 
 #app {
-    min-width: 1280px;
+    /*min-width: 1280px;*/
+    width: 100%;
     margin: 0 auto;
     padding: 2rem;
+    box-sizing: border-box;
+    overflow-y: scroll;
+    background-color: white;
 }
 
 @media (prefers-color-scheme: light) {
