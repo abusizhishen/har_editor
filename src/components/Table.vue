@@ -24,27 +24,27 @@
   </a-upload-dragger>
   <a-form class="condition" :model="formState">
     <div style="display: flex;align-items: center;gap: 1rem">
-      <a-form-item label="文件" style="margin-top: 10px">
+      <a-form-item label="file" style="margin-top: 10px">
         <a-select style="width: 400px;max-width: 600px" :options="harFileOptions" v-model:value="formState.file"
                   placeholder=""></a-select>
 
       </a-form-item>
       <div v-if="creator">
-        <p style="color: skyblue">{{ creator }}</p>
+        <p style="color: gray">{{ creator }}</p>
       </div>
     </div>
 
 
-    <a-form-item label="状态码">
+    <a-form-item label="status code">
       <a-radio-group class="radio" v-model:value="formState.status" option-type="button"
                      :options="statusOptions"/>
 
     </a-form-item>
-    <a-form-item label="状态码说明">
-      <a-radio-group class="radio" option-type="button" :options="statusTextOptions"
-                     v-model:value="formState.statusText"
-                     placeholder=""></a-radio-group>
-    </a-form-item>
+    <!--    <a-form-item label="状态码说明">-->
+    <!--      <a-radio-group class="radio" option-type="button" :options="statusTextOptions"-->
+    <!--                     v-model:value="formState.statusText"-->
+    <!--                     placeholder=""></a-radio-group>-->
+    <!--    </a-form-item>-->
     <a-form-item label="content-type">
       <a-radio-group class='radio' :options="contentTypeOptions" v-model:value="formState.contentType"
                      placeholder="" option-type="button"></a-radio-group>
@@ -56,16 +56,20 @@
 
   <a-space direction="vertical" style="display: flex; margin: 10px">
     <a-space warp>
-      <a-tooltip title="add">
-        <a-button :disabled="Object.keys(harFiles.valueOf()).length===0" @click="addEntries">add record</a-button>
-      </a-tooltip>
-      <a-tooltip title="add">
-        <a-button :disabled="Object.keys(harFiles.valueOf()).length===0" @click="readClipboardText">add record from
-          clipboard
+      <a-tooltip title="add new">
+        <a-button :disabled="Object.keys(harFiles.valueOf()).length===0" @click="addEntries">
+          <FileAddOutlined/>
         </a-button>
       </a-tooltip>
-      <a-tooltip title="download">
-        <a-button :disabled="Object.keys(harFiles.valueOf()).length===0" @click="downloadHAR">download har</a-button>
+      <a-tooltip title="copy from pasteboard">
+        <a-button :disabled="Object.keys(harFiles.valueOf()).length===0" @click="readClipboardText">
+          <SnippetsOutlined/>
+        </a-button>
+      </a-tooltip>
+      <a-tooltip title="download har files">
+        <a-button :disabled="Object.keys(harFiles.valueOf()).length===0" @click="downloadHAR">
+          <DownloadOutlined/>
+        </a-button>
       </a-tooltip>
     </a-space>
   </a-space>
@@ -136,7 +140,16 @@
   </a-modal>
 </template>
 <script lang="ts" setup>
-import {InboxOutlined, DeleteOutlined, EditOutlined, CopyOutlined, UploadOutlined} from '@ant-design/icons-vue';
+import {
+  InboxOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  CopyOutlined,
+  DownloadOutlined,
+  FileAddOutlined,
+  SnippetsOutlined,
+  UploadOutlined
+} from '@ant-design/icons-vue';
 import type {UnwrapRef} from 'vue';
 import {computed, reactive, ref, watch} from 'vue';
 import type {UploadChangeParam} from 'ant-design-vue';
