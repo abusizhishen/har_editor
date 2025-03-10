@@ -71,6 +71,12 @@
           <DownloadOutlined/>
         </a-button>
       </a-tooltip>
+      <a-tooltip title="download har files as ">
+        <a-button :disabled="Object.keys(harFiles.valueOf()).length===0" @click="downloadHAR(true)">
+          <DownloadOutlined/>
+          as
+        </a-button>
+      </a-tooltip>
     </a-space>
   </a-space>
 
@@ -82,14 +88,14 @@
         <a>Publish</a>
       </template>
       <template v-else-if="column.dataIndex === 'operation'">
-        <a-button @click="onDelete(record.key)">
-          <DeleteOutlined/>
-        </a-button>
         <a-button @click="editShowModal(record)">
           <EditOutlined/>
         </a-button>
         <a-button @click="quickCopy(record)">
           <CopyOutlined/>
+        </a-button>
+        <a-button @click="onDelete(record.key)">
+          <DeleteOutlined/>
         </a-button>
       </template>
     </template>
@@ -100,6 +106,7 @@
           <JsonEditorVue
               v-model="record.request"
               mode="text"
+              :contenteditable="false"
               :mainMenuBar="false"
               :statusBar="true"
               :stringified="false"
@@ -377,20 +384,50 @@ const removeHarFile = (file) => {
   delete harFiles.value[file.name]
 }
 
-const downloadHAR = () => {
+const downloadHAR = async (change = false) => {
   const jsonString = JSON.stringify(harFiles.value[formState.file], null, 2);
   // 创建 Blob 对象，设置 MIME 类型为 application/json
   const blob = new Blob([jsonString], {type: 'application/json'});
-  // 生成一个 URL 对象
-  const url = URL.createObjectURL(blob);
   // 创建一个隐藏的 a 标签，设置下载文件名
+  // Get default filename
+  // 格式化日期为 yyyymmddhis 格式
+  const date = new Date();
+  const pad = (n) => n.toString().padStart(2, '0');
+  const timestamp = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+
+  const defaultName = `${formState.file}_${timestamp}.har`;
+
+  // 如果支持 File System Access API，则调用原生文件保存对话框
+  if (change === true && window.showSaveFilePicker) {
+    try {
+      const options = {
+        types: [{
+          description: 'select har file',
+          accept: {'application/json': ['.har']}
+        }],
+        suggestedName: defaultName
+      };
+      const fileHandle = await window.showSaveFilePicker(options);
+      const writableStream = await fileHandle.createWritable();
+      await writableStream.write(blob);
+      await writableStream.close();
+      message.success('file save success')
+      return
+    } catch (error) {
+      // 用户可能取消了保存操作或发生其他错误
+      console.error('保存文件失败:', error);
+      return
+    }
+  }
+
+  console.log('change', change)
+  // 不支持的情况下退化为原来的方法：通过 prompt 获取文件名
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${formState.file}_${new Date().valueOf()}.har`; // 文件名，可自行修改
+  link.download = defaultName;
   document.body.appendChild(link);
-  // 模拟点击
   link.click();
-  // 移除 a 标签并释放 URL 对象
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
