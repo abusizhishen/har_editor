@@ -13,12 +13,12 @@
     "ant-design-vue": "4.x",
     "destr": "^2.0.3",
     "json-editor-vue": "^0.17.3",
-    "vite-plugin-importer": "^0.2.5",
     "vue": "^3.5.13",
     "vue3-clipboard": "^1.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
+    "unplugin-auto-import": "^19.1.1",
     "unplugin-vue-components": "^28.4.1",
     "vite": "^6.1.0",
     "vite-plugin-compression": "^0.5.1"

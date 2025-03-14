@@ -1,25 +1,19 @@
 //自动导入ui-组件 比如说ant-design-vue  element-plus等
-import Components from "unplugin-vue-components/vite";
-//ant-design-vue
 import {AntDesignVueResolver} from "unplugin-vue-components/resolvers";
 import Vue from '@vitejs/plugin-vue'
 import {defineConfig} from "vite";
-import viteCompression from 'vite-plugin-compression';
+import AutoImport from 'unplugin-auto-import/vite'
 
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [
         Vue(),
-        Components({
-            //ant-design-vue   importStyle = false 样式就没了
+        AutoImport({ /* options */
             resolvers: [
-                AntDesignVueResolver({importStyle: "less", resolveIcons: true}),
+                AntDesignVueResolver(),
             ],
         }),
-        viteCompression({
-            algorithm: 'brotliCompress', // 或 'gzip'
-            threshold: 20480 // 对大于 10KB 的文件压缩
-        })
+
     ],
     build: {
         rollupOptions: {
