@@ -16,10 +16,10 @@ export default defineConfig({
                 AntDesignVueResolver({importStyle: "less", resolveIcons: true}),
             ],
         }),
-        // viteCompression({
-        //     algorithm: 'brotliCompress', // 或 'gzip'
-        //     threshold: 20480 // 对大于 10KB 的文件压缩
-        // })
+        viteCompression({
+            algorithm: 'brotliCompress', // 或 'gzip'
+            threshold: 20480 // 对大于 10KB 的文件压缩
+        })
     ],
     build: {
         rollupOptions: {
